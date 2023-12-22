@@ -21,9 +21,7 @@ def neg_sample(seq, labels, num_item,sample_size):
 class Trainer():
     def __init__(self, args, model, train_loader, test_loader,valid_loader):
         self.args = args
-        self.lamda = args.lamda
         self.device = args.device
-        self.clean = args.clean
         print(self.device)
         self.model = model.cuda()
 
@@ -32,11 +30,7 @@ class Trainer():
         self.valid_loader = valid_loader
         self.lr_decay = args.lr_decay_rate
         self.lr_decay_steps = args.lr_decay_steps
-        self.target = args.le_share
-        self.soft_target = args.soft_target
 
-        self.enable_sample = args.enable_sample
-        self.sampled_evaluation = args.sampled_evaluation
 
         self.cr = CE(self.model, args)
         self.num_epoch = args.num_epoch
@@ -48,7 +42,7 @@ class Trainer():
         self.step = 0
         self.metric = args.best_metric
         self.best_metric = -1e9
-        self.le_share = args.le_share
+
 
 
     def train(self):
