@@ -38,23 +38,15 @@ class CE:
         self.sample_ratio = args.samples_ratio
         self.device = args.device
         self.net = args.model
-        self.lamda = args.lamda
         self.alpha = args.alpha
-        self.target = args.le_share
-        self.t = args.le_t
-        self.JS = args.JS
-        self.smoothing = args.smoothing
         self.args = args
-        self.lamda_b = args.lamda_b
+
         if self.enable_sample:
             self.ce = nn.CrossEntropyLoss()
         else:
             self.ce = nn.CrossEntropyLoss(ignore_index=0)
         #self.ce = self.ls
         self.path = args.load_path + 'class-{}-tau{}'.format(str(args.class_num),str(args.tau))
-
-        if args.cold:
-            self.user_num = int (args.user_num*0.8)
 
         # if args.graph + args.MA + args.use_pop + args.noise > 1:
         #     print('设置了多种方法，程序退出')
@@ -94,56 +86,7 @@ class CE:
                 self.H.append(hash[str(i)])
      
         
-        if args.loss == 'pop' or args.loss == 'pop_decouple':
-            pop = torch.zeros(args.num_item + 1,device='cuda')
-            f = open(self.args.data_path).readlines()
-            t = 0
-            for line in f:
-                t += 1
-                line = line[:-1].split(',')
-                line = [int(i) for i in line[:-2]]
-                for i in line:
-                    if i == 0: continue
-                    pop[i] = pop[i] + 1
-            self.noise = pop / pop.sum()
-            
-        if args.loss == 'ls' or args.loss == 'ls_decouple':
-            self.noise = torch.ones(args.num_item+1,device='cuda')
-            self.noise[0] = 0
-            self.noise = self.noise / args.num_item
-
-        if args.loss == 'csn' :
-            import pandas as pd
-            user = np.load(args.load_path + 'user.npy')
-            self.user_embd = torch.tensor(user,device='cuda')
-            self.user_embd /= torch.norm(self.user_embd,p=2,dim=-1).unsqueeze(-1)
-            self.user_embd.requires_grad = False
-            self.data = pd.read_csv(args.data_path, header=None).replace(-1,0).values
-            self.data = torch.LongTensor(self.data).cuda()[:,:-3]
-            print(self.data.shape)
-
-        if args.loss == 'ckd' :
-            if args.model == 'bert' or args.model == 'sasrec':
-                    model = BERT(args)
-            elif args.model == 'nextitnet':
-                model = NextItNet(args)
-            elif args.model == 'nfm':
-                model = NFM(args).to(args.device)
-            elif args.model == 'deepfm':
-                model = DeepFM(args)
-            elif args.model == 'GRU4Rec':
-                model = GRU4Rec(args)
-            elif args.model == 'caser':
-                model = Caser(args)
-            elif args.model == 'SVD':
-                model = SVD(args)
-            elif args.model == 'mlp':
-                model = MLP(args)
-            else:
-                raise NotImplementedError
-            model = model.to(args.device)
-            model.load_state_dict(torch.load(os.path.join(args.load_path+'model.pkl'),map_location=args.device))
-            self.modelkd = model
+       
 
 
     def index_to_label(self,labels):
