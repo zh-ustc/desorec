@@ -39,15 +39,10 @@ class GRU4Rec(nn.Module):
         self.dense = nn.Linear(self.hidden_size, self.embedding_size)
     
         # Output
-        self.predict=args.le_share
-        if args.le_share== "unshare" or args.soft_target=='unshare':
-            self.output = nn.Linear(args.d_model, args.num_item+1)
 
-        # self.output_style = args.output_style
-        # if self.output_style == 'avg':
-        #     self.DIV_COE = (torch.arange(0, args.max_len).repeat(args.d_model, 1).transpose(0, 1) + 1).to(args.device)
+        self.output = nn.Linear(args.d_model, args.num_item+1)
 
-        # parameters initialization
+      
         self.apply(self._init_weights)
 
     def _init_weights(self, module):
@@ -66,40 +61,16 @@ class GRU4Rec(nn.Module):
         gru_output = self.dense(gru_output)
         return gru_output
 
-    def feat2pred(self,x, target): # 使用该函数获得predict，计算各feature对应各类别的分数
-        if target=='share':
-            x = F.linear(x, self.item_embedding.weight)
-        elif target=='unshare':
-            x = self.output(x)
-        # 在le loss中使用的soft target
-        elif target == 'mlp':
-            x = self.mlp(x)
-        elif target== 'cos':
-            x = cos(x.view(-1,x.size(-1)),self.item_embedding.weight).view(x.size(0),x.size(1),-1)
-        elif target == 'euclid':
-            x = euclid(x.view(-1,x.size(-1)),self.item_embedding.weight).view(x.size(0),x.size(1),-1)
+    def feat2pred(self,x): # 使用该函数获得predict，计算各feature对应各类别的分数
+        x = self.output(x)
         return x   # B * L * D --> (B * L)* N 
     
-    def avg_user_representation(self,pred):
-        # pred in shape B * L * D
-        pred_sum = torch.cumsum(pred, dim=1)
-        pred_new = pred_sum / self.DIV_COE
-        return pred_new
+  
     def forward(self, x):
-        
         x = self.log2feats(x)
-        # item_seq_emb = self.item_embedding(item_seq)
-        # item_seq_emb_dropout = self.emb_dropout(item_seq_emb)
-        # gru_output, _ = self.gru_layers(item_seq_emb_dropout)
-        # gru_output = self.dense(gru_output)
-        # the embedding of the predicted item, shape of (batch_size, embedding_size)
-        # seq_output = self.gather_indexes(gru_output, item_seq_len - 1)
-        # if self.output_style == 'avg' :
-        #     x = self.avg_user_representation(x)
-        # x = x[labels>0]
         x = x[:,-1,:]
         if self.get_user:
             return x
-        return self.feat2pred(x, self.predict)#, self.feat2pred(x, self.soft_target)   # B * L * D --> (B * L)* N
+        return self.feat2pred(x) 
     
 
